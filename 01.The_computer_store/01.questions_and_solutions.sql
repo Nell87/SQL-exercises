@@ -79,6 +79,16 @@ FROM products
 WHERE Price = (SELECT MIN(Price) FROM products);
 
 # 16. Select the name of each manufacturer along with the name and price of its most expensive product.
+  SELECT P.Name, P.Price, M.Name
+   FROM Products P 
+   INNER JOIN Manufacturers M
+	 ON P.Manufacturer = M.Code
+     AND P.Price =
+     (
+       SELECT MAX(P.Price)
+         FROM Products P
+         WHERE P.Manufacturer = M.Code
+     );
 
 # 17. Add a new product: Loudspeakers, $70, manufacturer 2.
 INSERT INTO products (Code,Name, Price, Manufacturer)
