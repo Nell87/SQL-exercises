@@ -65,3 +65,50 @@ FROM departments D
 INNER JOIN employees E
 	ON E.Department = D.Code
  WHERE Budget > (SELECT AVG(Budget) FROM departments);   
+
+# 14. Select the names of departments with more than two employees (assuming that all departments have different names)
+SELECT COUNT(E.department) AS total_number, E.Department, D.Name
+FROM employees E
+INNER JOIN departments D 
+	ON E.Department = D.Code
+GROUP BY E.Department
+HAVING total_number >2;
+
+# 15. Select the name and last name of employees working for departments with second lowest budget.
+SELECT E.Name, E.LastName, E.Department, D.Code, D.Budget
+FROM employees E
+INNER JOIN departments D
+	ON E.Department = D.Code
+WHERE Budget = (SELECT Budget FROM departments 
+				ORDER BY Budget ASC LIMIT 1 OFFSET 1);
+
+# 16. Add a new department called "Quality Assurance", with a budget of $40,000 and departmental code 11. 
+# Add an employee called "Mary Moore" in that department, with SSN 847-21-9811.
+INSERT INTO departments(Code, Name, Budget)
+VALUES(11, "Quality Assurance", 40000);
+
+INSERT INTO employees(SSN, Name, LastName, Department)
+VALUES("847219811", "Mary", "Moore", 11);
+
+# 17. Reduce the budget of all departments by 10%.
+UPDATE departments
+SET Budget = Budget *0.9;
+
+# 18. Reassign all employees from the Research department (code 77) to the IT department (code 14).
+UPDATE employees
+SET department = 14
+WHERE department = 77;
+
+# 19. Delete from the table all employees in the IT department (code 14).
+DELETE FROM employees
+WHERE department=14;
+
+# 20. Delete from the table all employees who work in departments with a budget greater than or equal to $60,000.
+DELETE FROM employees
+WHERE Department IN (
+					SELECT Code FROM departments 
+                    WHERE Budget>=60000
+					);
+
+# 21. Delete from the table all employees.
+DELETE FROM employees;
