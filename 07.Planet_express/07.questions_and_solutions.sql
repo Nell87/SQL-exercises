@@ -10,8 +10,32 @@ SELECT Client.Name
 FROM Client 
 INNER JOIN package   
   ON client.AccountNumber = package.Recipient 
-WHERE Package.weight = 1.5;                              
+WHERE Package.weight = 1.5;    
 
 # 2. What is the total weight of all the packages that he sent?
+SELECT SUM(package.Weight) as total_weight
+FROM package
+INNER JOIN client
+	ON package.Sender= client.AccountNumber
+WHERE client.Name=(
+					SELECT Client.Name
+					FROM Client 
+					INNER JOIN package   
+					ON client.AccountNumber = package.Recipient 
+					WHERE Package.weight = 1.5
+					);
 
 # 3. Which pilots transported those packages?
+SELECT Name 
+FROM employee
+INNER JOIN shipment
+	ON employee.EmployeeID=shipment.Manager
+INNER JOIN package
+	ON shipment.ShipmentID=package.PackageNumber
+WHERE Sender IN (
+				SELECT client.AccountNumber
+				FROM Client 
+				INNER JOIN package   
+				ON client.AccountNumber = package.Recipient 
+				WHERE Package.weight = 1.5
+			  );
