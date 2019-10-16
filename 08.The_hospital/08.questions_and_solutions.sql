@@ -59,25 +59,69 @@ LEFT JOIN undergoes U ON Phy.EmployeeID = U.Physician
 # 05. Obtain the information for appointments where a patient met with a physician other than his/her primary care physician. 
 # Show the following information: Patient name, physician name, nurse name (if any), start and end time of appointment, 
 # examination room, and the name of the patient's primary care physician.
-
-
-
-        
-             
-SELECT * FROM physician;
-SELECT * FROM trained_in;
-SELECT * FROM procedures;
-SELECT * FROM undergoes;
-SELECT * FROM patient;
-
-
-# 06. The Patient field in Undergoes is redundant, since we can obtain it from the Stay table. There are no constraints in force to prevent inconsistencies between these two tables. More specifically, the Undergoes table may include a row where the patient ID does not match the one we would obtain from the Stay table through the Undergoes.Stay foreign key. Select all rows from Undergoes that exhibit this inconsistency.
+SELECT  Pa.Name AS patient_name, Ap.Start, Ap.End, Phy.Name AS phy_name, nurse.Name AS nurse_name, Ap.ExaminationRoom, PhyPCP.Name AS PCP   
+FROM patient Pa
+LEFT JOIN appointment Ap ON Pa.SSN = Ap.Patient
+	LEFT JOIN physician Phy ON Ap.Physician = Phy.EmployeeID
+		LEFT JOIN nurse ON Ap.PrepNurse = nurse.EmployeeID
+			LEFT JOIN physician PhyPCP ON Pa.PCP = PhyPCP.EmployeeID
+				WHERE Pa.PCP NOT LIKE Ap.Physician;
+		
+# 06. The Patient field in Undergoes is redundant, since we can obtain it from the Stay table. There are no constraints in force 
+# to prevent inconsistencies between these two tables. More specifically, the Undergoes table may include a row where the patient ID 
+# does not match the one we would obtain from the Stay table through the Undergoes.Stay foreign key. 
+# Select all rows from Undergoes that exhibit this inconsistency.
+SELECT *
+FROM undergoes U 
+INNER JOIN stay 	
+	ON U.Stay = stay.StayID
+    WHERE U.Patient NOT LIKE stay.Patient;
 
 # 07. Obtain the names of all the nurses who have ever been on call for room 123.
+SELECT N.Name
+FROM nurse N
+WHERE EmployeeID in (
+					SELECT on_call.nurse FROM on_call, room
+                    WHERE on_call.BlockFloor = room.BlockFloor
+                    AND on_call.BlockCode = room.BlockCode
+                    AND room.RoomNumber=123
+					);
 
-# 08. The hospital has several examination rooms where appointments take place. Obtain the number of appointments that have taken place in each examination room.
+# 08. The hospital has several examination rooms where appointments take place. Obtain the number of appointments 
+# that have taken place in each examination room.
+SELECT COUNT(*) AS total, ExaminationRoom
+FROM appointment
+GROUP BY ExaminationRoom;
 
-# 09. Obtain the names of all patients (also include, for each patient, the name of the patient's primary care physician), such that \emph{all} the following are true:
- 
-
-
+# 09. Obtain the names of all patients (also include, for each patient, the name of the patient's primary care physician), 
+# such that all the following are true:
+# - The patient has been prescribed some medication by his/her primary care physician.
+# - The patient has undergone a procedure with a cost larger that $5,000
+# - The patient has had at least two appointment where the nurse who prepped the appointment was a registered nurse.
+# - The patient's primary care physician is not the head of any department.
+    
+SELECT Pa.Name AS patient_name, Phy.Name AS phy_name
+FROM patient Pa, physician Phy
+WHERE Pa.PCP=Phy.EmployeeID
+	AND EXISTS
+		(
+        SELECT* FROM prescribes Pr
+        WHERE Pr.Physician = Pa.PCP
+        AND Pr.Patient = Pa.SSN
+        )
+	AND EXISTS
+		(
+		SELECT * FROM undergoes, procedures
+		WHERE undergoes.Procedures = procedures.Code
+		AND procedures.cost>5000
+		)
+   AND 2 <=
+       (
+         SELECT COUNT(Ap.AppointmentID) FROM Appointment Ap, Nurse N
+          WHERE Ap.PrepNurse = N.EmployeeID
+            AND N.Registered = 1
+       )
+   AND NOT Pa.PCP IN
+       (
+          SELECT Head FROM Department
+       );
